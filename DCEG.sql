@@ -1,55 +1,22 @@
-select * from #dcegpage
+--select * from  PSX_folder f join contentstatus cs on f.contentid = cs.contentid where  cs.TITLE ='dceg'
 
-drop table #en
+IF OBJECT_ID('tempdb..#d') IS NOT NULL  drop table   #d
+select * into  #d from
+ (select 2 as id, 'posted' as date_display_mode 
+ union all 
+ select 2, 'updated'
+ union all
+ select 1, 'posted'
+ union all
+ select 4, 'reviewed'
+ )a
 
-drop table #d
-select * into #d from
- (select 'updated' as date_display_mode union all select 'posted')a
-
-
-drop table #enpage
-select 
-t.CONTENTTYPENAME
-, 301956 as term_id--en.term_id 
-, c.CONTENTID as id, p.SHORT_TITLE  as title
-, left(c.locale,2) as langcode
-, p.SHORT_TITLE as field_short_title
-, left(convert(nvarchar(max),coalesce( p.META_DESCRIPTION, p.long_description)),319) as field_page_description
-, left(p.SHORT_DESCRIPTION,254) as field_feature_card_description
-, case when convert(nvarchar(max),p.long_description) <> convert(nvarchar(max),p.META_DESCRIPTION) and p.META_DESCRIPTION IS NOT NULL 
-	then left(convert(nvarchar(max),p.LONG_DESCRIPTION),319) else null end as field_list_description
-, case when  p.DO_NOT_INDEX = 1 then 'ExcludeSearch' else 'IncludeSearch' end as field_search_engine_restrictions
-, 0 as field_public_use
-, convert(date,d.DATE_FIRST_PUBLISHED) as field_date_posted
-, convert(DATE, d.DATE_LAST_REVIEWED) as field_date_reviewed
-, convert(DATE, d.DATE_LAST_MODIFIED) as field_date_updated
-, case dd.DATE_DISPLAY_MODE when 1 then ( select 'posted' as date_display_mode for XML path('') , type, elements) when 4 then (select 'reviewed' as date_display_mode for XML path('') , type, elements) when 2 then 
-	(select date_display_mode from #d for XML path('') , type, elements) END as date_display_mode
-, p.PRETTY_URL_NAME as field_pretty_url
-, p.BROWSER_TITLE as field_browser_title
-,p.card_title as field_card_title
-, o.INTRO_TEXT as field_intro_text
-into #enpage
-from dbo.contentstatus c 		
-		--inner join dcegsitesection1
-		inner join contenttypes t on t.contenttypeid = c.contenttypeid
-		inner join states s on s.stateid = c.contentstateid and s.workflowappid = c.workflowappid
-		left outer join GENPAGEMETADATA_GENPAGEMETADATA1 p on p.CONTENTID = c.CONTENTID and p.REVISIONID = c.CURRENTREVISION
-		left outer join GENDATESSET_GENDATESSET d on d.CONTENTID = c.CONTENTID and d.REVISIONID = c.CURRENTREVISION
-		left outer join GENDATEDISPLAYMODE_GENDATEDISPLAYMODE dd on dd.CONTENTID = c.CONTENTID and dd.REVISIONID = c.CURRENTREVISION
-		left outer join CGVONTHISPAGE_CGVONTHISPAGE o on o.CONTENTID = c.CONTENTID and o.REVISIONID = c.CURRENTREVISION
-where c.LOCALE = 'en-us' and s.STATENAME not like '%archive%'
-and CONTENTTYPENAME not in ( 'genExternalLink',  'cgvDynamicList')
-and CONTENTTYPENAME not like 'pdq%'
-and CONTENTTYPENAME not like '%image%'
-and CONTENTTYPENAME not like 'rffNav%'
-and c.CONTENTID in (select CONTENTID from #dcegpage)
 
 
 --- !!!!!! needs sitesection weight
 
 --!! sitesection
-drop table #s
+IF OBJECT_ID('tempdb..#s') IS NOT NULL drop table #s
 select * into #s from
 (
 select 'hide_in_main_nav' as field_navigation_display_options
@@ -59,11 +26,13 @@ union all
 select 'hide_in_section_nav'
 )a
 
+select 'sitesectionsql'
 select
-computed_path,
+computed_path
+, c.CONTENTID 
 --level,
 --sort_rank AS weight,
-name,
+,name,
 term_id,
 parent,
 field_pretty_url,
@@ -73,17 +42,69 @@ case when field_navigation_display_options Is NOT null then (select field_naviga
 field_landing_page,
 description_value,
 field_navigation_label,
-field_levels_to_display,
-field_mega_menu_content,
-field_breadcrumb_root
-from #en
+field_levels_to_display
+,m.CONTENTID as field_mega_menu_content
+, case when s.computed_path = '/' then 1 else null END as   field_breadcrumb_root
+, 'en' as langcode
+, w.CHANNEL as field_channel
+, w.CONTENT_GROUP as field_content_group
+from qtp.dbo.endceg s inner join contentstatus c on s.term_id = c.CONTENTID 
+left outer join GENWEBANALYTICS_GENWEBANALYTICS w on w.CONTENTID = c.CONTENTID and w.REVISIONID = c.public_revision
+outer apply (select  h.CONTENTID from PSX_OBJECTRELATIONSHIP r1 
+		 inner join RXSLOTTYPE st on st.SLOTID = r1.SLOT_ID
+		 inner join CONTENTSTATUS c1 on c1.CONTENTID = r1.DEPENDENT_ID
+		 inner join CT_GLORAWHTML h on h.CONTENTID = r1.DEPENDENT_ID and c1.public_revision = h.REVISIONID 
+		where r1.OWNER_ID = c.CONTENTID and r1.OWNER_REVISION = c.public_revision
+			and st.SLOTNAME = 'nvcgSlMegamenuHtml' ) m
 order by 1
 for xml path , root('rows')
+-------------
+
+
+IF OBJECT_ID('tempdb..#enpage') IS NOT NULL drop table #enpage
+select 
+t.CONTENTTYPENAME
+, dp.[SiteSection TermID] as term_id--en.term_id 
+, c.CONTENTID as id, p.SHORT_TITLE  as title
+, left(c.locale,2) as langcode
+, p.SHORT_TITLE as field_short_title
+, left(convert(nvarchar(max),coalesce( p.META_DESCRIPTION, p.long_description)),600) as field_page_description
+, left(p.SHORT_DESCRIPTION,254) as field_feature_card_description
+, p.long_description as field_list_description
+, case when  p.DO_NOT_INDEX = 1 then 'ExcludeSearch' else 'IncludeSearch' end as field_search_engine_restrictions
+, 0 as field_public_use
+, convert(date,d.DATE_FIRST_PUBLISHED) as field_date_posted
+, convert(DATE, d.DATE_LAST_REVIEWED) as field_date_reviewed
+, convert(DATE, d.DATE_LAST_MODIFIED) as field_date_updated
+, (select distinct #d.date_display_mode from GENDATEDISPLAYMODE_GENDATEDISPLAYMODE d inner join #d on d.DATE_DISPLAY_MODE = #d.id  
+where d.CONTENTID = c.contentid and d.REVISIONID = c.PUBLIC_REVISION
+for XML path('') , type, elements) as date_display_mode
+, p.PRETTY_URL_NAME as field_pretty_url
+, p.BROWSER_TITLE as field_browser_title
+,p.card_title as field_card_title
+, o.INTRO_TEXT as field_intro_text
+into #enpage
+from dbo.contentstatus c 		
+		inner join qtp.dbo.dcegpage dp on dp.contentid = c.CONTENTID 
+		inner join contenttypes t on t.contenttypeid = c.contenttypeid
+		inner join states s on s.stateid = c.contentstateid and s.workflowappid = c.workflowappid
+		left outer join GENPAGEMETADATA_GENPAGEMETADATA1 p on p.CONTENTID = c.CONTENTID and p.REVISIONID = c.CURRENTREVISION
+		left outer join GENDATESSET_GENDATESSET d on d.CONTENTID = c.CONTENTID and d.REVISIONID = c.CURRENTREVISION
+		left outer join CGVONTHISPAGE_CGVONTHISPAGE o on o.CONTENTID = c.CONTENTID and o.REVISIONID = c.CURRENTREVISION
+where c.LOCALE = 'en-us' and s.STATENAME not like '%archive%'
+and CONTENTTYPENAME not in ( 'genExternalLink',  'cgvDynamicList')
+and CONTENTTYPENAME not like 'pdq%'
+and CONTENTTYPENAME not like '%image%'
+and CONTENTTYPENAME not like 'rffNav%'
 
 
 ------------------
-drop table #list 
-select c.CONTENTID as pageid ,   r.RID as list_rid, r.SORT_RANK as list_rank ,    c1.CONTENTID as list_id ,  r1.RID as link_rid , c2.CONTENTID as linkid, t2.CONTENTTYPENAME , r1.SORT_RANK
+IF OBJECT_ID('tempdb..#list') IS NOT NULL drop table #list 
+select c.CONTENTID as pageid 
+,   r.RID as list_rid
+, r.SORT_RANK as list_rank 
+,    c1.CONTENTID as list_id 
+,  r1.RID as link_rid , c2.CONTENTID as linkid, t2.CONTENTTYPENAME , r1.SORT_RANK
 into #list
 from #enpage p inner join CONTENTSTATUS c on c.CONTENTID = p.id 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.CURRENTREVISION
@@ -97,8 +118,11 @@ inner join CONTENTTYPES t2 on t2.CONTENTTYPEID = c2.CONTENTTYPEID
 where sl.SLOTNAME ='genSlotBody' and t1.CONTENTTYPENAME = 'genlist'
 
 
-drop table #internallink1
 
+
+
+
+IF OBJECT_ID('tempdb..#internallink1') IS NOT NULL drop table #internallink1
 --- TODO internallink for cgvcustomer link?, media link? 
 select * into #internallink1 from
 (
@@ -107,7 +131,7 @@ r.rid as internallink_id
 ,c1.contentid as field_internal_link_target_id
 , NULL as field_override_title
 ,en.langcode
---, t1.CONTENTTYPENAME 
+, t1.CONTENTTYPENAME 
 from 
 #enpage en 
 inner join CONTENTSTATUS c on c.CONTENTID = en.id
@@ -118,24 +142,59 @@ inner join CONTENTSTATUS c1 on c1.contentid = r.DEPENDENT_ID
 inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.contenttypeid 
 where  sl.SLOTNAME in ( 'genSlotRelatedPages' )  and t1.CONTENTTYPENAME not like  '%link%' 
 union all
-select link_rid, linkid, null, 'en'
+select link_rid, linkid, null, 'en', CONTENTTYPENAME 
 from #list where contenttypename not like  '%link%'
+--union all
+--select 
+--r.rid as internallink_id
+--,c1.contentid as field_internal_link_target_id
+--, NULL as field_override_title
+--,en.langcode
+----, t1.CONTENTTYPENAME 
+----, sl1.SLOTNAME 
+--from #enpage en 
+--inner join CONTENTSTATUS c on c.CONTENTID = en.id
+--inner join CONTENTTYPES t on t.CONTENTTYPEID = c.CONTENTTYPEID 
+--inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.CURRENTREVISION
+--inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
+--inner join CONTENTSTATUS c1 on c1.contentid = r.DEPENDENT_ID
+--inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.contenttypeid 
+--inner join PSX_OBJECTRELATIONSHIP r1 on r1.OWNER_ID = c1.CONTENTID and r1.OWNER_REVISION = c1.PUBLIC_REVISION
+--inner join RXSLOTTYPE sl1 on sl1.SLOTID = r1.SLOT_ID
+--where  sl.SLOTNAME in ( 'genSlotRelatedPages' )  and t1.CONTENTTYPENAME  like  '%link%' 
+--union all
+--select link_rid, linkid, null, 'en'
+--from #list where contenttypename not like  '%link%'
 ) a 
 
-drop table #internallink
+
+
+
+IF OBJECT_ID('tempdb..#internallink') IS NOT NULL drop table #internallink
 select * into #internallink from 
 (select i.*
 from #internallink1 i inner join #enpage p on i.field_internal_link_target_id = p.id 
 ) a
 
 
+GO 
+select 'internallinksql'
 select internallink_id , field_internal_link_target_id, field_override_title, langcode 
 from #internallink 
+where CONTENTTYPENAME <> 'nciFile'
 for xml path , root('rows')
 
 
+select 'medialink'
+select i.internallink_id as medialink_id  , i.field_internal_link_target_id  as field_media_link, field_override_title, langcode 
+from #internallink i
+where i.CONTENTTYPENAME  =  'nciFile'
+for xml path , root('rows')
+
+
+
 ---------------------
-drop table #externallink
+IF OBJECT_ID('tempdb..#externallink') IS NOT NULL  drop table #externallink
 
 select r.dependent_id, r.RID as externallink_id
 , l.URL as field_external_link_uri
@@ -150,17 +209,16 @@ inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.contenttypeid
 inner join CT_GENEXTERNALLINK l on l.CONTENTID = c1.CONTENTID and l.REVISIONID = c1.CURRENTREVISION
 where  sl.SLOTNAME in ( 'genSlotRelatedPages' )
 
-
+select 'externallinksql'
 select * from #externallink 
  for xml path , root('rows')
-
-
 
 delete from #list  where link_rid not  in (select internallink_id from #internallink) and link_rid  not in (select externallink_id from #externallink)
 GO
 
 
 --list
+select 'list'
 select  list_rid as row_rid,  'list_item_title_desc' as field_list_item_style, 'en' as langcode
 , (select link_rid as field_list_item 
 	from #list l1 
@@ -178,26 +236,46 @@ for xml path, root ('rows')
 
 
 
---contentblock
 
-drop table #contentblock 
+
+
+--contentblock
+IF OBJECT_ID('tempdb..#contentblock') IS NOT NULL   drop table #contentblock 
+select distinct
+ c1.CONTENTID as [row!1!id]
+, langcode as [row!1!langcode]
+, convert(nvarchar(max),BODYFIELD) as [row!1!body!CDATA]
+into #contentblock 
+from CONTENTSTATUS c inner join 
+ (select id, contenttypename, langcode from #enpage )  a
+ on c.CONTENTID = a.id 
+ inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.PUBLIC_REVISION
+ inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
+ inner join PSX_TEMPLATE t on t.TEMPLATE_ID = r.VARIANT_ID 
+ inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
+ inner join CT_NCIDOCFRAGMENT  h on h.CONTENTID = c1.CONTENTID and h.REVISIONID = c1.PUBLIC_REVISION
+where sl.SLOTNAME = 'sys_inline_variant' 
+
+
+insert into #contentblock 
 select
 p.id 
+, 'en' as [row!1!langcode]
 ,coalesce( (select bodyfield from dbo.CT_GENLANDING gl where gl.contentid = c.contentid and gl.revisionid = c.CURRENTREVISION)
 , (select bodyfield from dbo.CT_gengeneral gl where gl.contentid = c.contentid and gl.revisionid = c.CURRENTREVISION)) as body
-into #contentblock
 from #enpage p inner join CONTENTSTATUS c on c.CONTENTID = p.id
-where id in (select contentid from #dcegpage where CONTENTTYPE = 'cgov_mini_landing_page')
+where id in (select contentid from qtp.dbo.dcegpage where [Drupal CONTENTTYPENAME] = 'cgov_mini_landing_page')
 and coalesce( (select bodyfield from dbo.CT_GENLANDING gl where gl.contentid = c.contentid and gl.revisionid = c.CURRENTREVISION)
 , (select bodyfield from dbo.CT_gengeneral gl where gl.contentid = c.contentid and gl.revisionid = c.CURRENTREVISION)) is not null
 
 
+---!!!inline content block?
+
+select 'contentblock'
 select 
 1 as tag
 , 0 as parent
-,id as [row!1!id]
-, 'en' as [row!1!langcode]
-,body as [row!1!body!CDATA]
+, *
 from #contentblock
 for xml explicit, root('rows')
 
@@ -206,7 +284,7 @@ for xml explicit, root('rows')
 select * into #minilanding from 
 (select distinct pageid, list_rid, list_RANK + 1  as sort_rank from #list 
 union all 
-select id, id, 0 from #contentblock 
+select [row!1!id], [row!1!id], 0 from #contentblock 
 ) a
 
 
@@ -214,8 +292,7 @@ select id, id, 0 from #contentblock
 
 
 
-
-drop table #para
+IF OBJECT_ID('tempdb..#para') IS NOT NULL  drop table #para
 select  p.id, 
 p.id as para_id
 ,coalesce( (select g.BODYFIELD from CT_GENGENERAL g where g.CONTENTID = p.id  and g.revisionid = c.currentrevision )
@@ -225,10 +302,12 @@ p.id as para_id
 , 'en' as langcode
 , null as sortrank 
 into #para
-from #enpage p inner join #dcegpage dp on p.id = dp.contentid 
+from #enpage p inner join qtp.dbo.dcegpage dp on p.id = dp.contentid 
 inner join CONTENTSTATUS c on c.CONTENTID = p.id 
-where dp.contenttype = 'cgov_article'
+where dp.[Drupal CONTENTTYPENAME] = 'cgov_article'
 
+
+select 'para_en'
 SELECT
     1 AS Tag,
     NULL AS Parent,
@@ -245,10 +324,10 @@ SELECT
 FROM #para 
 where para_id is not null and content is not null
 FOR XML EXPLICIT
+GO
 
 
-drop table #enpagedata 
-
+IF OBJECT_ID('tempdb..#enpagedata') IS NOT NULL  drop table #enpagedata 
 select * into #enpagedata from 
 (select 
 1 as Tag,  
@@ -342,14 +421,7 @@ from  #enpage 	 p
 
 
 
-select * from #dcegpage
-
-
-
-
-
-drop table #cgov_image
-
+IF OBJECT_ID('tempdb..#cgov_image') IS NOT NULL  drop table #cgov_image
 select 
 p.id as pageid
 , c.CONTENTID as imageid 
@@ -360,7 +432,7 @@ from #enpage p
 inner join CONTENTSTATUS c on p.id = c.CONTENTID 
 inner join CT_GENBIOGRAPHY pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION
 
---cgov_image
+select 'cgovimage'
 select 
 1 as tag,
 0 as parent
@@ -370,10 +442,131 @@ select
 from #cgov_image
 for xml explicit , root('rows')
 
+GO
 
-select * from #enpagedata
 
 
+
+
+--contextual image
+IF OBJECT_ID('tempdb..#contextual_image') IS NOT NULL  drop table  #contextual_image
+select * into #contextual_image from (
+select distinct c.CONTENTID as pageid, c1.CONTENTID as imageid 
+, left(c1.TITLE,  case when CHARINDEX('[' , c1.TITLE) -1 <=  0 then 999 else CHARINDEX('[' , c1.TITLE) -1 END) as title 
+, case when si.IMG1_FILENAME IS null then 'promotion' else 'lead' END as imagefield
+, case when i.img3_filename IS NOT null then 1 else 0 END as field_display_enlarge
+, p.langcode
+, i.PHOTO_CREDIT as field_credit
+, convert(nvarchar(max),si.IMG_ALT) as field_accessible_version
+, convert(nvarchar(max),i.img_CAPTION) as field_caption
+, i.IMG_SOURCE as field_original_source
+from CONTENTSTATUS c 
+inner join (select id, langcode from #enpage  ) p on c.CONTENTID = p.id 
+inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
+inner join RXSLOTTYPE sl on sl.SLOTID = r.slot_id 
+inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
+inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.CONTENTTYPEID 
+left outer join CT_GENIMAGE i on i.CONTENTID = c1.CONTENTID and i.REVISIONID = c1.public_revision
+left outer join RXS_CT_SHAREDIMAGE si on si.CONTENTID = c1.CONTENTID and si.REVISIONID = c1.public_revision
+where t1.CONTENTTYPENAME = 'gloimage' and  sl.slotname  like 'sys%' 
+union all 
+select distinct c.CONTENTID as pageid, c2.CONTENTID as imageid 
+, left(c2.TITLE,  case when CHARINDEX('[' , c2.TITLE) -1 <=  0 then 999 else CHARINDEX('[' , c2.TITLE) -1 END) as title 
+, case when si.IMG1_FILENAME IS null then 'promotion' else 'lead' END as imagefield
+, case when i.img3_filename IS NOT null then 1 else 0 END as field_display_enlarge
+, p.langcode
+, trans.PHOTO_CREDIT
+, convert(nvarchar(max),si.IMG_ALT) as ALT
+, convert(nvarchar(max),trans.IMG_CAPTION)
+, convert(nvarchar(max),trans.IMG_SOURCE)
+from CONTENTSTATUS c 
+inner join (select id, langcode from #enpage ) p on c.CONTENTID = p.id 
+inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
+inner join RXSLOTTYPE sl on sl.SLOTID = r.slot_id 
+inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
+inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.CONTENTTYPEID 
+inner join PSX_OBJECTRELATIONSHIP r1 on r1.OWNER_ID = c1.CONTENTID and r1.OWNER_REVISION = c1.public_revision
+inner join CONTENTSTATUS c2 on c2.CONTENTID = r1.DEPENDENT_ID
+left outer join RXS_CT_SHAREDIMAGE si on si.CONTENTID = c2.CONTENTID and si.REVISIONID = c2.public_revision
+inner join CT_GENIMAGE i on i.CONTENTID = c2.CONTENTID and i.REVISIONID = c2.public_revision
+inner join CT_GLOIMAGETRANSLATION trans on trans.CONTENTID = c1.CONTENTID and trans.REVISIONID = c1.public_revision
+where   sl.slotname  like 'sys%' and t1.CONTENTTYPENAME = 'gloImageTranslation'
+union all
+select distinct c.CONTENTID as pageid, c1.CONTENTID as imageid 
+, left(c1.TITLE,  case when CHARINDEX('[' , c1.TITLE) -1 <=  0 then 999 else CHARINDEX('[' , c1.TITLE) -1 END) as title 
+, NULL as imagefield
+,NULL
+, p.langcode
+, NULL as field_credit
+, null
+, NUll as field_caption
+, null 
+ from CONTENTSTATUS c 
+inner join (select id, langcode from #enpage ) p on c.CONTENTID = p.id 
+inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
+inner join RXSLOTTYPE sl on sl.SLOTID = r.slot_id 
+inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
+inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.CONTENTTYPEID 
+left outer join CT_GLOUTILITYIMAGE i on i.CONTENTID = c1.CONTENTID and i.REVISIONID = c1.public_revision
+where t1.CONTENTTYPENAME = 'gloutilityimage' and  sl.slotname  like 'sys%' 
+
+)a
+
+
+
+delete from #contextual_image where imageid in (select imageid from #cgov_image)
+
+
+
+--------------
+--contextual image english
+select 'contextualimage'
+select * from (
+select 
+distinct
+1 as tag
+, 0 as parent
+,i.imageid as [row!1!id]
+,'en' as [row!1!langcode!Element]
+, i.title as [row!1!name!Element]
+, 'https://www.cancer.gov/PublishedContent/Images' + substring(dbo.gaogetitemFolderPath(c.contentid,''),10,999) + '/'+  coalesce(gi.IMG3_FILENAME, si.IMG1_FILENAME, gi.img4_FILENAME,  u.img_utility_filename) as [row!1!field_media_image!Element]
+, i.field_accessible_version as [row!1!field_accessible_version!Element]
+, i.field_caption as [row!1!field_caption!CDATA]
+, i.field_display_enlarge as [row!1!field_display_enlarge!Element]
+, i.field_credit as [row!1!field_credit!Element]
+ from 
+(select * from #contextual_image where langcode = 'en' and title not like '%spanish%'
+) i 
+inner join CONTENTSTATUS c on i.imageid = c.contentid 
+left outer join RXS_CT_SHAREDIMAGE si on si.CONTENTID = c.CONTENTID and si.REVISIONID = c.public_revision
+left outer join CT_genimage gi on gi.CONTENTID = c.CONTENTID and gi.REVISIONID = c.public_revision
+left outer join CT_GLOUTILITYIMAGE u on u.CONTENTID = c.CONTENTID and u.REVISIONID = c.public_revision
+union all
+select 
+distinct
+1 as tag
+, 0 as parent
+,i.imageid as [row!1!id]
+,'es' as [row!1!langcode!Element]
+, i.title as [row!1!name!Element]
+, 'https://www.cancer.gov/PublishedContent/Images' + substring(dbo.gaogetitemFolderPath(c.contentid,''),10,999) + '/'+  coalesce(gi.IMG3_FILENAME, si.IMG1_FILENAME, gi.img4_FILENAME) as [row!1!field_media_image!Element]
+, i.field_accessible_version as [row!1!field_accessible_version!Element]
+, i.field_caption as [row!1!field_caption!CDATA]
+, i.field_display_enlarge as [row!1!field_display_enlarge!Element]
+, i.field_credit as [row!1!field_credit!Element]
+ from 
+(select * from #contextual_image where langcode = 'es' ) i 
+inner join CONTENTSTATUS c on i.imageid = c.contentid 
+left outer join RXS_CT_SHAREDIMAGE si on si.CONTENTID = c.CONTENTID and si.REVISIONID = c.public_revision
+left outer join CT_genimage gi on gi.CONTENTID = c.CONTENTID and gi.REVISIONID = c.public_revision
+) a
+for xml explicit , root('rows')
+
+GO
+
+
+
+select 'biography'
 select d.*
 ,  a.[row!2!body!CDATA]
 , [row!2!field_image_promotional!Element] 
@@ -383,7 +576,7 @@ select d.*
 ,  [row!2!field_phone_number]
 ,  [row!2!field_org_name_1]
 ,  [row!2!field_org_name_2]
---,  [row!2!field_campus]
+,  [row!2!field_campus]
 ,  [row!2!field_office_location]
 from #enpagedata d 
 inner join 
@@ -399,7 +592,7 @@ NULL as  [row!2!field_image_promotional!Element]
 , null as [row!2!field_phone_number]
 , null as [row!2!field_org_name_1]
 , null as [row!2!field_org_name_2]
---, null as [row!2!field_campus]
+, null as [row!2!field_campus]
 , null as [row!2!field_office_location]
 union all 
 select 
@@ -414,7 +607,7 @@ select
 , pr.PHONE
 ,pr.ORGANIZATION
 ,pr.SUBDIVISION
---, pr.ADDRESS1
+, case when pr.ADDRESS1 like '%shady%' OR pr.ADDRESS1 like '%9609%' then 300 else 301 end
 , pr.ADDRESS2
 from #enpage p 
 inner join CONTENTSTATUS c on p.id = c.CONTENTID 
@@ -428,7 +621,7 @@ for xml explicit
 --event
 
 ---!!!!!! TODO  venue   tax   bio's campus taxs
-
+select 'event'
 select d.*
 ,  [row!2!body!CDATA]
 ,  [row!2!field_event_end_date]
@@ -436,6 +629,7 @@ select d.*
 ,  [row!2!field_venue]
 ,  [row!2!field_city_state]
 ,  [row!2!field_all_day_event]
+,  [row!2!field_event_series]
 from #enpagedata d 
 inner join 
 (select
@@ -448,6 +642,7 @@ NULL as [row!2!body!CDATA]
 , NULL as [row!2!field_venue]
 , NULL as [row!2!field_city_state]
 , NULL as [row!2!field_all_day_event]
+, NULL as [row!2!field_event_series]
 union all
 select 
 2 as tag
@@ -456,9 +651,10 @@ select
 ,pr.[BODYFIELD] 
 , pr.END_DATE
 ,pr.START_DATE
-,pr.VENUE
+, 400 as venue
 , pr.CITY
 , pr.ALL_DAY
+, 350 as field_event_series
 from #enpage p 
 inner join CONTENTSTATUS c on p.id = c.CONTENTID 
 inner join CT_GENEVENT pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION
@@ -470,27 +666,85 @@ for xml explicit
 
 
 --article
+select 'article'
 select d.* 
 from #enpagedata d 
 where Tag =1 or 
 [row!2!id] 
 in  (
-select contentid from #dcegpage p 
-where p.contenttype = 'cgov_article'
+select contentid from qtp.dbo.dcegpage p 
+where p.[Drupal CONTENTTYPENAME] = 'cgov_article'
 ) 
 order by tag
 for xml explicit
+GO
 
 
-select * from #enpage where id in 
-(select contentid from #dcegpage where CONTENTTYPE = 'cgov_blog_post')
-order by CONTENTTYPENAME 
+select 'homelanding_en'
+select p.*
+,
+(select top 1 imageid from #cgov_image i where i.pageid = p.id and langcode = p.langcode) as field_image_promotional
+from #enpage p 
+where p.id in -- 302687
+(select contentid from qtp.dbo.dcegpage p where p.[Drupal CONTENTTYPENAME] like 'cgov_home%' )
+for xml path , root ('rows')
+
+
+
+
+
+---blog post !!!!!!! blog_series
+select 'blogpost'
+select d.* 
+, [row!2!field_blog_topics!Element]
+, [row!2!body!CDATA] 
+--, [row!2!author] 
+,  [row!2!field_blog_series]
+from #enpagedata d 
+inner join 
+(select 
+1 as Tag
+,0 as Parent
+,NULL AS id
+, NULL as [row!2!body!CDATA] 
+--,NULL as [row!2!author] 
+, NULL as [row!2!field_blog_series]
+, null as  [row!2!field_blog_topics!Element]
+union all 
+select 
+2 as Tag,  
+1 as Parent
+,p.id 
+,coalesce((select pr.bodyfield  from CT_GENNEWSLETTERARTICLE pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
+,(select pr.bodyfield  from CT_GENNEWSRELEASE  pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
+, (select pr.bodyfield  from CT_GENgeneral pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
+) as  BODY
+, 500
+, (select 501 As id
+from CONTENTSTATUS where CONTENTID = 305
+FOR XML path (''), TYPE, ELEMENTS) 
+from  #enpage p 
+inner join CONTENTSTATUS c on p.id = c.CONTENTID 
+left outer join CT_GENNEWSLETTERARTICLE pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION
+left outer join CT_GENNEWSLETTER l on l.CONTENTID = c.CONTENTID and l.REVISIONID = c.CURRENTREVISION
+where p.id  in (select contentid from qtp.dbo.dcegpage p where p.[Drupal CONTENTTYPENAME]= 'cgov_blog_post' )
+) a
+on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
+order by d.tag
+for xml explicit
+
+
+
+
+
+
 
 
 
 
 
 --cgov file 
+select 'file'
 select 
  ep.*
 , 'https://dceg.cancer.gov/publishedcontent/Files' + substring(dbo.gaogetitemFolderPath([row!2!id] , ''), 10,999) + '/' 
@@ -503,31 +757,16 @@ from  #enpagedata ep
 where Tag =1 or 
 [row!2!id] 
 in  (
-select contentID from #dcegpage p 
-where CONTENTTYPe = 'cgov_file'
+select contentID from qtp.dbo.dcegpage p 
+where p.[Drupal CONTENTTYPENAME] = 'cgov_file'
 )
 order by tag
 for xml explicit
 
 
---!!!!mini landing
 
 
-
-select distinct p.id, p.title, p.CONTENTTYPENAME, l.list_rid , l.list_rank from #enpage p 
-left outer join #list l on l.pageid = p.id 
-where id in 
-(select contentid from #dcegpage where CONTENTTYPE = 'cgov_mini_landing_page')
-
-
-
-
-
-
-select * from #minilanding where pageid = 302626
-
-select * from #contentblock where id = 302626
-
+select 'minilanding_en'
 select pd.*,[row!2!field_landing_content],[row!2!field_landing_contents]
 from #enpagedata pd 
 inner join 
@@ -546,11 +785,11 @@ select
 			and mc.pageid in (select pageid from #minilanding group by pageid having COUNT(distinct list_rid) > 1)
 		 order by sort_rank
 		 for XML path (''), TYPE, ELEMENTS) 
-,		(select distinct list_rid as field_landing_contents,sort_rank from #minilanding mc where mc.pageid = p.id 
+,		(select distinct list_rid as field_landing_content,sort_rank from #minilanding mc where mc.pageid = p.id 
 			and mc.pageid in (select pageid from #minilanding group by pageid having COUNT(distinct list_rid) = 1)
 		 order by sort_rank
 		 for XML path (''), TYPE, ELEMENTS)
-from  #enpage p where p.id in (select contentid from #dcegpage where CONTENTTYPE = 'cgov_mini_landing_page' )
+from  #enpage p where p.id in (select contentid from qtp.dbo.dcegpage p where p.[Drupal CONTENTTYPENAME] = 'cgov_mini_landing_page' )
 
 ) a
 on (a.tag = pd.Tag and a.parent = pd.Parent and a.tag =1) or (a.tag = 2 and a.id = pd.[row!2!id])
@@ -560,55 +799,34 @@ for xml explicit
 
 
 
----blog post !!!!!!! blog_series
-
-select d.* 
---, [row!2!field_blog_topics!Element]
-, [row!2!body!CDATA] 
---, [row!2!author] 
-,  [row!2!field_blog_series]
-from #enpagedata d 
-inner join 
-(select 
-1 as Tag
-,0 as Parent
-,NULL AS id
-, NULL as [row!2!body!CDATA] 
---,NULL as [row!2!author] 
-, NULL as [row!2!field_blog_series]
---, [row!2!field_blog_topics!Element]
-union all 
-select 
-2 as Tag,  
-1 as Parent
-,p.id 
-,coalesce((select pr.bodyfield  from CT_GENNEWSLETTERARTICLE pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
-,(select pr.bodyfield  from CT_GENNEWSRELEASE  pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
-, (select pr.bodyfield  from CT_GENgeneral pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
-) as  BODY
-, 792905
-from  #enpage p 
-inner join CONTENTSTATUS c on p.id = c.CONTENTID 
-left outer join CT_GENNEWSLETTERARTICLE pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION
-left outer join CT_GENNEWSLETTER l on l.CONTENTID = c.CONTENTID and l.REVISIONID = c.CURRENTREVISION
-where p.id  in (select contentid from #dcegpage where CONTENTTYPE = 'cgov_blog_post' )
-) a
-on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
-order by d.tag
-for xml explicit
-
-
-select * from CT_GENNEWSLETTERARTICLE
-
-
-
-
 
 
 --------------
 
-
+-----------
 ----------------
+
+
+
+select computed_path, p.contentid, p.[Drupal CONTENTTYPENAME]
+from qtp.dbo.endceg e left outer join qtp.dbo.dcegpage p on e.field_landing_page = p.contentid 
+order by computed_path
+
+
+
+
+
+
+select c.CONTENTID, c.TITLE , dbo.gaogetitemFolderPath(c.contentid, '')  as url 
+, c1.TITLE as listitle 
+from CONTENTSTATUS c inner join PSX_OBJECTRELATIONSHIP r on c.CONTENTID = r.OWNER_ID and c.PUBLIC_REVISION = r.OWNER_REVISION
+inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
+inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
+inner join CT_GENList l on l.CONTENTID = c1.CONTENTID and l.REVISIONID = c1.PUBLIC_REVISION
+where c.CONTENTID in (select contentid from qtp.dbo.dcegpage p where p.[Drupal CONTENTTYPENAME] = 'cgov_mini_landing_page')
+and sl.SLOTNAME like 'sys%'
+
+
 
 
 
