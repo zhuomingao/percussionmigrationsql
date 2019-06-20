@@ -23,7 +23,8 @@ from contentstatus where CONTENTID  in
 (916031,858227,859583,859634,14222,14304,1099430,909708,910917,910942,429220,1080199,14587,915971,883849,13054,911134,911505,14034,63867,1090830,1043595,941434,1026781,321607,1057088,866280,1074842,1117590,747150,828020,1038929,988378,1052650,1047566,1087420,1088972,768882,867853,810260,776914,1026249,1078650,936591,918974,912884,915080,1054479,105818,14879,956474,1091338,901508,1061048,1113026,1061521,951603,936686,936680,936681,936682,936685,951608,914801,916849,916766,1092431,915271,1011470,16360,1102955,1114852,951125,919000,922513,930168,915591,14257,1034951,866188,1061645,799546,1061727,799373,916695,1033175,916661,608324,1041143,917286,917517,941591,922315,941619,941622,941581,941598,109060,176775,917508,917507,14272,102551,65156,905730,918912,65192,1104024,969702,970160,974319,1026805,425591,13917,14404,14539,13194,177549,921709,941585,951081,951121,919123,913440,913462,15184,64633,950983,950985,1040936,1071686,1110088,557445,909856,952582,952519,15754,386622,386688,13177,14132,445961,13082,1107630,1107631,1107624,1107629,915368,840882,1111025,929700,929880,951269,1078449,1078448,1078446,1102830,936262,936263,1034471,1070069,1106668,505627,919682,909853,909433,929890,14308,15076,14490,15611,13866,14106,929896,799547,267267,13790,315056,941586,1104012,1104013,1104010,1104011,941596,1135267,1135289,1140635,1134663,1134543,1134661,1144695
 ,315061
 ,951612
-,445961, 819746)
+,445961, 819746
+,14175)
 --(916031,858227,859583,859634,14222,14304,1099430,909708,910917,910942,429220,1080199,14587,915971,883849,13054,911134,911505,14034,63867,1090830,1043595,941434,1026781,321607,1057088,866280,1074842,1117590,747150,828020,1038929,988378,1052650,1047566,1087420,1088972,768882,867853,810260,776914,1026249,1078650,936591,918974,912884,915080,1054479,105818,14879,956474,1091338,901508,1061048,1113026,951603,936686,936680,936681,936682,936685,951608,914801,916849,916766,1092431,915271,1011470,16360,1102955,1114852,951125,919000,922513,930168,915591,14257,1034951,866188,1061645,799546,1061727,799373,916695,1033175,916661,608324,1041143,917286,917517,941591,922315,941619,941622,941581,941598,109060,176775,917508,917507,14272,102551,65156,905730,918912,65192,1104024,969702,970160,974319,1026805,425591,13917,14404,14539,13194,177549,921709,941585,951081,951121,919123,913440,913462,15184,64633,950983,950985,1040936,1071686,1110088,557445,894100,847704,844674,844695,844705,845082,586772,579694,595697,686212,675681,641530,499957,989419,989420,1028685,1059679,909856,952582,952519,15754,386622,386688,13177,14132,445961,13082,1107630,1107631,1107624,1107629,915368,840882,1111025,929700,929880,951269,1078449,1078448,1078446,1102830,936262,936263,1034471,1070069,1106668,505627,919682,909853,909433,989416,989418,1001033,1060214,836316,836317,836320,836324,836256,836658,836659,836725,836754,836829,836921,837258,586656,586657,532546,685623,488281,464419,464420,464421,463785,463786,463787,463788,929890,14308,15076,14490,15611,13866,14106,929896,799547,267267,13790,315056,941586,1104012,1104013,1104010,1104011,941596,1135267,1135289,1140635,1134663,1134543,1134661,1144695, 1061521)
 --(916031,858227,859583,859634,14222,14304,1099430,909708,910917,910942,429220,1080199,14587,915971,883849,13054,911134,911505,14034,63867,1090830,1043595,941434,1026781,321607,1057088,866280,1074842,1117590,747150,828020,1038929,988378,1052650,1047566,1087420,1088972,768882,867853,810260,776914,1026249,1078650,936591,918974,912884,915080,1054479,105818,14879,956474,1091338,901508,1061048,1113026,951603,936686,936680,936681,936682,936685,951608,914801,916849,916766,1092431,915271,1011470,16360,1102955,1114852,951125,919000,922513,930168,915591,14257,1034951,866188,1061645,799546,1061727,799373,916695,1033175,916661,608324,1041143,917286,917517,941591,922315,941619,941622,941581,941598,176775,14272,102551,65156,905730,918912,65192,1104024,969702,970160,974319,1026805,425591,917733,917734)
 
@@ -421,6 +422,7 @@ order by 1
  update  #es set name = replace(REPLACE(name, '&reg;','®'), '&amp;', '&')
 
 
+
 IF OBJECT_ID('tempdb..#espage1') IS NOT NULL  drop table   #espage1
 select 
 t.CONTENTTYPENAME
@@ -458,7 +460,7 @@ from dbo.contentstatus c
 		left outer join CGVONTHISPAGE_CGVONTHISPAGE o on o.CONTENTID = c.CONTENTID and o.REVISIONID = c.public_revision 
 		left outer join CGVSYNDICATION_CGVSYNDICATION1 syn on syn.CONTENTID = c.CONTENTID and syn.REVISIONID = c.PUBLIC_REVISION
 where c.LOCALE = 'es-us' and s.STATENAME not like '%archive%'
-and CONTENTTYPENAME not in ( 'nciLink',  'cgvDynamicList','nciAppModulePage')
+and CONTENTTYPENAME not in ( 'nciLink',  'cgvDynamicList')
 and CONTENTTYPENAME not like 'pdq%'
 and CONTENTTYPENAME not like '%image%'
 and s.STATENAME <> 'draft' 
@@ -582,6 +584,7 @@ GO
 
 update  #es set  #es.field_landing_page =  #espage.englishid
 from  #es inner join  #espage on  #es.field_landing_page =  #espage.id 
+where  #espage.englishid is not null
 
 
 --!! sitesection
@@ -594,6 +597,9 @@ select 'hide_in_mobile_nav'
 union all
 select 'hide_in_section_nav'
 )a
+
+
+
 
 
 
@@ -621,40 +627,6 @@ field_content_group
 from (select * from  #en union all select * from  #es) a
 order by 1
 for xml path, root('rows')
-
-
-
--------------
---select 'appmodulepage'
---select d.*,  a.[row!2!body!CDATA], a.[row!2!field_config!CDATA], a.[row!2!field_template!Element]
---, [row!2!field_image_promotional!Element] 
---from  #enpagedata d 
---inner join 
---(select
---1 as tag,
---0 as parent,
---NULL as id ,
---NULL as [row!2!body!CDATA],
---NULL as  [row!2!field_config!CDATA],
---NULL as  [row!2!field_template!Element] ,
---NULL as  [row!2!field_image_promotional!Element] 
---union all 
---select 
---2 as tag
---, 1 as parent
---, p.id
---, h.BODY as body 
---,  m.CONFIG as field_config
---, m.TEMPLATE as field_template
---,(select top 1 imageid from  #cgov_image i where i.pageid = p.id and imagefield = 'promotion' and langcode = p.langcode) as field_image_promotional
---from #enpage p 
---inner join CONTENTSTATUS c on c.CONTENTID = p.id 
---inner join CT_NCIAPPMODULEPAGE m on m.CONTENTID = c.CONTENTID and m.REVISIONID = c.PUBLIC_REVISION
---inner join CGVHTMLCONTENTDATA_CGVHTMLCONTENTDATA h on h.CONTENTID = c.CONTENTID and h.REVISIONID = c.PUBLIC_REVISION
---where CONTENTTYPENAME = 'nciappmodulepage'
---) a on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
---order by d.tag
---for xml explicit
 
 
 
@@ -1016,6 +988,7 @@ select distinct
  , h.CONTENTID  as [row!1!id]
 , langcode  as [row!1!langcode]
 , convert(nvarchar(max),BODYFIELD) as [row!1!body!CDATA]
+, left(c1.TITLE, CHARINDEX('[', c1.TITLE)-1) as [row!1!info!Element]
 from  #cthp cp  
 inner join contentstatus c on c.contentid = cp.card_id
 inner join contentstatus c1 on c1.contentid = cp.contentid 
@@ -1030,6 +1003,7 @@ select distinct
 , c1.CONTENTID as [row!1!id]
 , langcode as [row!1!langcode]
 , convert(nvarchar(max),BODYFIELD) as [row!1!body!CDATA]
+, left(c1.TITLE, CHARINDEX('[', c1.TITLE)-1) as [row!1!info!Element]
 from CONTENTSTATUS c inner join 
  (select id, contenttypename, langcode from #enpage union all select ID, contenttypename, langcode from #espage)  a
  on c.CONTENTID = a.id 
@@ -1171,11 +1145,11 @@ for xml explicit , root('rows')
 
 
 
-select contentid from #mini
-except
-select contentid from qtp.dbo.mini0611
-except
-select contentid from #mini
+--select contentid from #mini where CONTENTID = 14175
+--except
+--select contentid from qtp.dbo.mini0611
+--except
+--select contentid from #mini
 
 --select * from #enpage where id in (445961, 819746)
 --select * from #espage where id in (445961, 819746)
@@ -1196,6 +1170,7 @@ lc.row_rid as parentid
 , lc.contenttypename
 , lc.card_rank as listitem_rank
 , null as field_list_title
+, lc.SLOTNAME
 from  #landing_content lc 
 where lc.SLOTNAME = 'nvcgSlLayoutThumbnailA'
 union all
@@ -1207,6 +1182,7 @@ c.CONTENTID
 , t1.contenttypename 
 , r.sort_rank
 , null 
+, sl.SLOTNAME
 from CONTENTSTATUS c 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
@@ -1223,6 +1199,7 @@ r.RID
 , t2.CONTENTTYPENAME 
 , r1.sort_rank 
 , case when pt.name = 'cgvDsListNoTitleDescriptionNoImage' then null else l.UNIQUE_TITLE END as UNIQUE_TITLE
+, sl.SLOTNAME
 from CONTENTSTATUS c 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
@@ -1259,7 +1236,7 @@ and (sl.SLOTNAME = 'cgvBody' )
 
 
 
-
+GO
 
 -------------------------
 
@@ -2064,10 +2041,11 @@ where t1.CONTENTTYPENAME = 'gloutilityimage' and  sl.slotname  like 'sys%'
 )a
 
 
-select * from #contextual_image where imageid = 961754
+
 
 
 delete from  #contextual_image where imageid in (select imageid from  #cgov_image)
+
 
 
 
@@ -2376,13 +2354,12 @@ where langcode = 'es' and englishimageid is not null
 for xml explicit , root('rows')
 
 
+
+
 --------------
 --contextual image english
 
 select 'contextualimage_en'
-
-
-
 select * from (
 select 
 distinct
@@ -2427,6 +2404,10 @@ left outer join CT_genimage gi on gi.CONTENTID = c.CONTENTID and gi.REVISIONID =
 left outer join CT_GLOUTILITYIMAGE u on u.CONTENTID = c.CONTENTID and u.REVISIONID = c.public_revision
 ) a
 for xml explicit , root('rows')
+
+
+
+
 
 
 
@@ -2671,8 +2652,8 @@ select
 1 as tag
 ,0 as parent
 ,p.id as [row!1!id], langcode as [row!1!langcode]
-, 'Overview' as [row!1!field_cthp_card_title]
-, case when c.locale = 'en-us' then 'cthp-overview' else 'ASPECTOS GENERALES' END  as [row!1!field_cthp_card_theme]
+, case when c.locale = 'en-us' then 'Overview' else 'ASPECTOS GENERALES' END  as [row!1!field_cthp_card_title]
+,  'cthp-overview'  as [row!1!field_cthp_card_theme]
 ,  h.body as [row!1!field_cthp_overview_card_text!CDATA]
 from (select id, langcode, contenttypename from  #enpage union all select id, langcode, contenttypename from  #espage) p 
 inner join CONTENTSTATUS c on c.CONTENTID = p.id 
@@ -2993,7 +2974,6 @@ for xml explicit
 
 
 
-
 --infographic spanish
 select 'infographic_es'
 select d.*,  a.[row!2!body!CDATA], 
@@ -3174,6 +3154,44 @@ on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id =
 order by d.tag
 for xml explicit
 GO
+
+
+
+
+
+-------------
+select 'appmodulepage_en'
+select d.*,  a.[row!2!body!CDATA],  a.[row!2!field_enable_push_state!Element]
+, [row!2!field_image_promotional!Element] 
+from  #enpagedata d 
+inner join 
+(select
+1 as tag,
+0 as parent,
+NULL as id ,
+NULL as [row!2!body!CDATA],
+NULL as  [row!2!field_enable_push_state!Element] ,
+NULL as  [row!2!field_image_promotional!Element] 
+union all 
+select 
+2 as tag
+, 1 as parent
+, p.id
+, h.BODY as body 
+
+, m.ENABLE_PUSH_STATE as field_enable_push_state
+,(select top 1 imageid from  #cgov_image i where i.pageid = p.id and imagefield = 'promotion' and langcode = p.langcode) as field_image_promotional
+from #enpage p 
+inner join CONTENTSTATUS c on c.CONTENTID = p.id 
+inner join CGVDYNAMICPAGEDATA_CGVDYNAMICPAGEDATA m on m.CONTENTID = c.CONTENTID and m.REVISIONID = c.PUBLIC_REVISION
+inner join CGVHTMLCONTENTDATA_CGVHTMLCONTENTDATA h on h.CONTENTID = c.CONTENTID and h.REVISIONID = c.PUBLIC_REVISION
+where CONTENTTYPENAME = 'nciappmodulepage'
+) a on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
+order by d.tag
+for xml explicit
+GO
+
+
 
 
 
@@ -3412,6 +3430,9 @@ where p.CONTENTTYPENAME = 'cgvblogpost'
 on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
 order by d.tag
 for xml explicit
+
+
+
 
 
 
@@ -3902,25 +3923,18 @@ select ll.parentid, ll.listitem_rid as field_list_items, ll.langcode, ll.listite
 , 'list_item_title_desc_image' as field_list_item_style
 , ll.listitem_rank , ll.field_list_title
  from  #landinglistitem ll
-where ll.parentid in (select CONTENTID from  #mini) 
+where ll.parentid in (select CONTENTID from  #mini)  and SLOTNAME = 'nvcgSlLayoutThumbnailA' 
 union all
 select ll.parentid, ll.listitem_rid as field_list_items, ll.langcode, ll.listitem_rank
 , 'list_item_title_desc' as field_list_item_style
 , ll.listitem_rank , ll.field_list_title
  from  #landinglistitem ll inner join PSX_OBJECTRELATIONSHIP r on ll.parentid = r.RID 
-where r.OWNER_ID in (select contentid from #mini) 
+where r.OWNER_ID in (select contentid from #mini) and SLOTNAME = 'cgvBody'
 
 ) a
 where field_list_items  in (select internallink_id from  #internallink)
 or field_list_items  in (select externallink_id from  #externallink)
-
 GO
-
-
-
-
-
-
 
 ---!! list
 select 'list'
@@ -4044,6 +4058,10 @@ into  #MMrow
 from (select distinct row_rid, langcode from  #landing_contentMM  where SLOTNAME ='nvcgSlLayoutMultimediaA' ) mm
 
 
+
+
+
+
 --Multi media row
 select 'multimediarow'
 select row_rid, langcode
@@ -4055,6 +4073,13 @@ select row_rid, langcode
 		for XML path (''), TYPE, ELEMENTS)		
 from (select distinct row_rid, langcode from  #MMrow )a
 for xml path , root ('rows')
+
+
+
+
+
+
+
 
 
 
@@ -4106,6 +4131,7 @@ select distinct parentid , id, sort_rank from #minirawhtml
 
 ) a
 order by 1
+
 
 
 
@@ -4218,6 +4244,9 @@ for xml explicit
 
 
 
+
+
+
 ---home landing page  English
 select 'homelanding_en'
 select p.*
@@ -4286,26 +4315,9 @@ for xml path , root ('rows')
 ---------------------------
 
 ---------------------------
+-------------------------------
 
-
-select * from #minilandingcontent where parentid = 819746
-
-select * from #minicontentblock where id = 839746
-
-
-
-
-
-
-
-
-select * from #minilandingcontent where parentid = 883849
-
-
-select * from #internallink where internallink_id in 
-(select field_list_items  from #list where row_rid = 883849)
-
-
+--!!!!translationid report!!!!
 
 select ID, translationid, CONTENTTYPENAME , 'www.cancer.gov'+ substring(url ,10, 999) as url 
 from (
@@ -4319,74 +4331,5 @@ union all
 select spanishid, id , 'pdqinformationsummary', dbo.gaogetitemFolderPath(spanishid, '') as url 
 from #summaryes
 ) a
+where id = 1099975
 
-
-select  s.id, c.CONTENTID 
-from #summaryes s 
-left outer join (PSX_OBJECTRELATIONSHIP r inner join CONTENTSTATUS c on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.PUBLIC_REVISION  ) 
-on r.DEPENDENT_ID = s.id and CONFIG_ID = 6 
-
-
-
-
-
-
-
-
-
-select * from #enpage where id = 1115050
-
-
-
-select * from #cthp
-where pagetitle like 'brain%'
-
-
-select top 10 * from CONTENTSTATUSHISTORY order by EVENTTIME desc
-
-
-select * from #l where  id = 76319
-
-select * from #espage where englishid = 14423
-
-select * from #pfcrow where row_rid = 7251760
-
-select * from #promocard where promocard_id = 7133096
-941434
-
-select * from CONTENTSTATUS 
-where CONTENTID = 941434
-
-select * from #espage where id = 951612
-
-select * from #mini where CONTENTID = 951612
-
-
-select * from #mini where contentid = 14304
-
-
-
-
-GO
-select t.CONTENTTYPENAME, sl.SLOTNAME, c.TITLE , c1.TITLE , l.URL
-from contentstatus c inner join PSX_OBJECTRELATIONSHIP r on c.CONTENTID = r.OWNER_ID and c.PUBLIC_REVISION = r.OWNER_REVISION
-inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
-inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.CONTENTTYPEID 
-inner join CONTENTTYPES t on t.CONTENTTYPEID = c.CONTENTTYPEID 
-inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
-inner join CT_NCILINK l on l.CONTENTID = c1.CONTENTID and l.REVISIONID = c1.PUBLIC_REVISION
-where t1.CONTENTTYPENAME in ( 'ncilink', 'genexternallink') and sl.SLOTNAME like 'sys%'
-
-
-
-
-
-
-select c.CONTENTID, c.TITLE , dbo.gaogetitemFolderPath(c.contentid, '')  as url 
-, c1.TITLE as listitle 
-from CONTENTSTATUS c inner join PSX_OBJECTRELATIONSHIP r on c.CONTENTID = r.OWNER_ID and c.PUBLIC_REVISION = r.OWNER_REVISION
-inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
-inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
-inner join CT_NCILIST l on l.CONTENTID = c1.CONTENTID and l.REVISIONID = c1.PUBLIC_REVISION
-where c.CONTENTID in (select CONTENTID from #mini )
-and sl.SLOTNAME like 'sys%'

@@ -31,16 +31,29 @@ update #folder set FolderName = '' , path = '/' where ParentID is null
 IF OBJECT_ID('tempdb..#mini') IS NOT NULL  drop table  #mini
 select CONTENTID into #mini from contentstatus where CONTENTID  in
 (1133447,1133528,1133525,1133526,1120689,1120712,1124079,1123421,1121709,1120626,1051465,1051499,1064646,1051491,1051623,1051493,1077637,1051494,1051471
+,1133447
+,1133528
+,1145882
+,1133502
+,1133525
+,1133526
+,1120689
+,1120712
+,1124079
+,1123421
+,1121709
+,1120626
+,1051465
+,1051499
+,1064646
+,1051491
+,1051623
+,1051493
+,1077637
+,1051494
+,1051471
 --916031,858227,859583,859634,14222,14304,1099430,909708,910917,910942,429220,1080199,14587,915971,883849,13054,911134,911505,14034,63867,1090830,1043595,941434,1026781,321607,1057088,866280,1074842,1117590,747150,828020,1038929,988378,1052650,1047566,1087420,1088972,768882,867853,810260,776914,1026249,1078650,936591,918974,912884,915080,1054479,105818,14879,956474,1091338,901508,1061048,1113026,951603,936686,936680,936681,936682,936685,951608,914801,916849,916766,1092431,915271,1011470,16360,1102955,1114852,951125,919000,922513,930168,915591,14257,1034951,866188,1061645,799546,1061727,799373,916695,1033175,916661,608324,1041143,917286,917517,941591,922315,941619,941622,941581,941598,176775,14272,102551,65156,905730,918912,65192,1104024,969702,970160,974319,1026805,425591,917733,917734
 )
-
-
-
-
-
-
-
-
 
 
 
@@ -543,7 +556,7 @@ GO
 
 ------------------
 IF OBJECT_ID('tempdb..#landinglistitem') IS NOT NULL  drop table  #landinglistitem
-select * into #landinglistitem from
+select * into  #landinglistitem from
 (select   
 lc.row_rid as parentid
 ,lc.card_rid as listitem_rid
@@ -552,7 +565,8 @@ lc.row_rid as parentid
 , lc.contenttypename
 , lc.card_rank as listitem_rank
 , null as field_list_title
-from #landing_content lc 
+, lc.SLOTNAME
+from  #landing_content lc 
 where lc.SLOTNAME = 'nvcgSlLayoutThumbnailA'
 union all
 select 
@@ -562,14 +576,15 @@ c.CONTENTID
 , c1.contentid 
 , t1.contenttypename 
 , r.sort_rank
-, null
+, null 
+, sl.SLOTNAME
 from CONTENTSTATUS c 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
 inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.CONTENTTYPEID 
 inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
-where c.CONTENTID in (select CONTENTID from #mini)
-and sl.SLOTNAME = 'nvcgSlLayoutThumbnailA'
+where c.CONTENTID in (select CONTENTID from  #mini)
+and (sl.SLOTNAME = 'nvcgSlLayoutThumbnailA' )
 union all
 select 
 r.RID
@@ -578,7 +593,8 @@ r.RID
 , c2.contentid 
 , t2.CONTENTTYPENAME 
 , r1.sort_rank 
-, l.UNIQUE_TITLE 
+, case when pt.name = 'cgvDsListNoTitleDescriptionNoImage' then null else l.UNIQUE_TITLE END as UNIQUE_TITLE
+, sl.SLOTNAME
 from CONTENTSTATUS c 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
@@ -589,14 +605,18 @@ inner join PSX_OBJECTRELATIONSHIP r1 on r1.OWNER_ID = c1.CONTENTID and r1.OWNER_
 inner join RXSLOTTYPE sl1 on sl1.SLOTID = r1.SLOT_ID and sl1.SLOTNAME = 'gloSlListItem'
 inner join CONTENTSTATUS c2 on c2.CONTENTID = r1.DEPENDENT_ID
 inner join CONTENTTYPES t2 on t2.CONTENTTYPEID = c2.CONTENTTYPEID 
+inner join PSX_TEMPLATE pt on pt.TEMPLATE_ID = r.VARIANT_ID
 where c.CONTENTID in (select CONTENTID from  #mini)
 and (sl.SLOTNAME = 'cgvBody' )
+--and c.CONTENTID = 1133525
 ) a 
-GO
+
+--7371381
+
+
 
 
 ------
-
 
 IF OBJECT_ID('tempdb..#internallink1') IS NOT NULL  drop table  #internallink1
 select * into #internallink1 from
@@ -767,6 +787,9 @@ select c.CONTENTID, c.CONTENTID + 40000 as row_rid, r.RID as card_rid, left(c.lo
 from CONTENTSTATUS c inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
 where c.CONTENTID in (select CONTENTID from #mini) and sl.SLOTNAME = 'nvcgSlLayoutFeatureA'
+
+
+
 
 
 -------
@@ -1691,35 +1714,30 @@ GO
 
 IF OBJECT_ID('tempdb..#list') IS NOT NULL  drop table  #list 
 
-select * into #list from
+select * into  #list from
 (
 select distinct lc.row_rid, lc.card_rid as field_list_items, lc.langcode, lc.sort_rank
 , 'list_item_title_desc_image' as field_list_item_style
 , ll.listitem_rank , ll.field_list_title
-from #landinglistitem ll inner join #landing_content lc on ll.listitem_rid = lc.card_rid
+from  #landinglistitem ll inner join  #landing_content lc on ll.listitem_rid = lc.card_rid 
 union all
 select ll.parentid, ll.listitem_rid as field_list_items, ll.langcode, ll.listitem_rank
 , 'list_item_title_desc_image' as field_list_item_style
 , ll.listitem_rank , ll.field_list_title
- from #landinglistitem ll
-where ll.parentid in (select CONTENTID from #mini) 
+ from  #landinglistitem ll
+where ll.parentid in (select CONTENTID from  #mini)  and SLOTNAME = 'nvcgSlLayoutThumbnailA' 
 union all
 select ll.parentid, ll.listitem_rid as field_list_items, ll.langcode, ll.listitem_rank
 , 'list_item_title_desc' as field_list_item_style
 , ll.listitem_rank , ll.field_list_title
  from  #landinglistitem ll inner join PSX_OBJECTRELATIONSHIP r on ll.parentid = r.RID 
-where r.OWNER_ID in (select contentid from #mini)
+where r.OWNER_ID in (select contentid from #mini) and SLOTNAME = 'cgvBody'
+
 ) a
-where field_list_items  in (select internallink_id from #internallink)
-or field_list_items  in (select externallink_id from #externallink)
-
+where field_list_items  in (select internallink_id from  #internallink)
+or field_list_items  in (select externallink_id from  #externallink)
 GO
-
-
-
-
-
-
+GO
 
 
 ---!! list
@@ -1740,10 +1758,6 @@ select  row_rid, langcode, field_list_item_style
 from (select distinct row_rid, langcode, field_list_item_style, field_list_title from #list ) l 
 for xml path, root ('rows')
 GO
-
-
-
-
 
 
 --- !! primary feature card row
@@ -1894,16 +1908,14 @@ select distinct  r.row_rid as field_landing_content
 
 
 ---------
-
-
-
-
-
-
 IF OBJECT_ID('tempdb..#minilandingcontent') IS NOT NULL  drop table  #minilandingcontent
 select * into #minilandingcontent from
 (
 select distinct parentid, parentid as id,  3 as sort_rank from #landinglistitem l 
+union
+select distinct r.OWNER_ID, parentid as id,  4  + r.SORT_RANK as sort_rank
+from  #landinglistitem l inner join PSX_OBJECTRELATIONSHIP r on l.parentid = r.RID  
+where r.OWNER_ID in (select contentid from #mini ) 
 union 
 select distinct parentid, ID, 1 from #minicontentblock b 
 union
@@ -1912,8 +1924,7 @@ select  distinct CONTENTID, row_rid,2   from #twoitemfeaturecardrow
 order by 1
 
 
-
-
+select * from #minilandingcontent where parentid = 1133525
 
 ----mini landing English
 
@@ -1998,19 +2009,196 @@ for xml path , root ('rows')
 
 
 
+
+
+
+
+
+
+------------------------
+---blogseries english
+select 'blogseries_en'
+select d.*,[row!2!field_about_blog!CDATA]
+, [row!2!field_allow_comments]
+,[row!2!field_feedburner_url]
+, [row!2!field_num_display_posts]
+, [row!2!field_blog_series_shortname]
+, [row!2!field_recommended_content_header]
+, [row!2!field_banner_image!Element]  
+,[row!2!field_image_promotional!Element]
+, [row!2!field_archive_back_years!Element]
+,[row!2!field_archive_group_by!Element]
+,[row!2!field_featured_posts]
+from  #enpagedata d 
+inner join 
+(select
+1 as tag,
+0 as parent,
+NULL as id 
+,NULL as [row!2!field_about_blog!CDATA]
+,NULL as [row!2!field_allow_comments]
+,NULL as [row!2!field_feedburner_url]
+,NULL as [row!2!field_num_display_posts]
+,NULL as [row!2!field_blog_series_shortname]
+,NULL as [row!2!field_recommended_content_header]
+,NULL as [row!2!field_banner_image!Element]
+,NULL as [row!2!field_image_promotional!Element]
+, NULL as [row!2!field_archive_back_years!Element]
+, NULL as [row!2!field_archive_group_by!Element]
+, NULL as [row!2!field_featured_posts]
+union all 
+select 
+2 as tag
+, 1 as parent
+, p.id
+, b.[ABOUT_BLOG] 
+,isnull(b.COMMENTING_AVAILABLE , 0)
+, b.FEEDBURNER_URL 
+, b.NUMBER_POSTS 
+, b.BLOG_SHORTNAME 
+, b.FEATURE_CARDS_HEADER 
+,
+(select   
+	'https://www.cancer.gov/PublishedContent/Images' + substring(dbo.gaogetitemFolderPath(c2.contentid,''),10,999) + '/'+ 
+	si.IMG_UTILITY_FILENAME as field_banner_image
+		from CONTENTSTATUS c 
+			inner join PSX_OBJECTRELATIONSHIP r on c.CONTENTID = r.OWNER_ID and c.public_revision = r.OWNER_REVISION
+			inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
+			inner join PSX_OBJECTRELATIONSHIP r1 on r1.OWNER_ID = c1.CONTENTID and r1.OWNER_REVISION = c1.public_revision
+			inner join CONTENTSTATUS c2 on c2.CONTENTID = r1.DEPENDENT_ID
+			inner join CT_GLOUTILITYIMAGE si on si.CONTENTID = c2.CONTENTID and si.REVISIONID = c2.public_revision
+			inner join CONTENTTYPES t2 on t2.CONTENTTYPEID = c2.CONTENTTYPEID 
+		where c.CONTENTID =p.id and r.SLOT_ID = 527
+	) 
+, (select top 1  imageid from  #cgov_image i where i.pageid = p.id and langcode = 'en') as field_image_promotional
+, 7
+, case when c.title like '%Cancer Currents%' Or c.title like 'Temas y relatos%' then  'month' else 'year' end 
+, (select r2.DEPENDENT_ID as field_featured_posts
+from CONTENTSTATUS c1 inner join  PSX_OBJECTRELATIONSHIP r on  r.OWNER_ID = c1.CONTENTID and r.OWNER_REVISION = c1.PUBLIC_REVISION 
+inner join rxslottype s on r.SLOT_ID = s.SLOTID    
+inner join contentstatus c2 on c2.contentid = r.DEPENDENT_ID
+inner join CT_NCILIST l on l.CONTENTID = c2.CONTENTID and l.REVISIONID = c2.PUBLIC_REVISION
+inner join PSX_OBJECTRELATIONSHIP r2 on r2.OWNER_ID = c2.CONTENTID and r2.OWNER_REVISION = c2.PUBLIC_REVISION
+inner join RXSLOTTYPE sl2 on sl2.SLOTID = r2.SLOT_ID
+where c1.CONTENTID = p.term_id  and c2.TITLE like '%featured%' and sl2.SLOTNAME like '%listitem%'
+order by r.SORT_RANK
+for XML path ('')  , TYPE, ELEMENTS
+)
+from CONTENTSTATUS c inner join CT_CGVBLOGSERIES b on c.CONTENTID = b.CONTENTID and c.public_revision = b.REVISIONID
+inner join  #enpage p on p.id = c.CONTENTID 
+) a
+on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
+order by d.tag
+for xml explicit
+
+
+---!!blog topics   
+select 'blogtopics_en'
+select distinct v.ID as term_id,  v.name , b.BLOG_SERIES as field_owner_blog, 'en' as langcode
+,LOWER( REPLACE( v.name,' ','-'))  as field_pretty_url
+, 'DESCRIPTION GOES HERE' as description
+from  #enpage p 
+inner join CONTENTSTATUS c on p.id = c.CONTENTID 
+inner join CT_CGVBLOGPOST b on b.CONTENTID = c.CONTENTID and b.REVISIONID = c.public_revision
+ outer apply perccancergov.dbo.udf_StringSplit(b.blog_topics,',') tax
+left outer join TAX_VALUE v on v.NODE_ID = tax.ObjectID
+left outer join TAX_NODE n on n.ID = v.node_id and n.TAXONOMY_ID = 15
+where   CONTENTTYPENAME = 'cgvBlogpost'
+and v.NAME is not null
+for xml path , root('rows')
+
+
+
+
+---englsih and none translateds blogpost
+select 'blogpost_en'
+select d.* 
+, [row!2!field_image_article!Element] 
+, [row!2!field_image_promotional!Element] 
+,  [row!2!field_blog_series]
+, [row!2!field_blog_topics!Element]
+, [row!2!body!CDATA] 
+, [row!2!author] 
+, [row!2!field_recommended_content!Element] 
+, [row!2!field_recommended_contents!Element] 
+from  #enpagedata d 
+inner join 
+(select 
+1 as Tag
+,0 as Parent
+,NULL AS id
+, NULL as [row!2!field_image_article!Element] 
+, NULL as [row!2!field_image_promotional!Element] 
+,NULL as [row!2!field_blog_series]
+,NULL as [row!2!field_blog_topics!Element]
+,NULL as [row!2!body!CDATA] 
+, NULL as [row!2!author] 
+, NULL as [row!2!field_recommended_content!Element] 
+, NULL as [row!2!field_recommended_contents!Element] 
+union all 
+select 
+2 as Tag,  
+1 as Parent
+,p.id 
+,(select top 1 imageid from  #cgov_image i where i.pageid = p.id and imagefield = 'lead' and langcode = p.langcode ) as field_image_article
+,(select top 1 imageid from  #cgov_image i where i.pageid = p.id and imagefield = 'promotion' and langcode = p.langcode) as field_image_promotional
+, case when p.langcode = 'es' then (select englishid from  #espage where id =pr.BLOG_SERIES) else pr.BLOG_SERIES END 
+	,(select v.id from 
+	 CT_CGVBLOGPOST pr1 inner join CONTENTSTATUS c1 on c1.CONTENTID = pr1.CONTENTID  and c1.public_revision = pr1.REVISIONID
+	cross apply perccancergov.dbo.udf_StringSplit(pr.blog_topics,',') tax
+	inner join TAX_VALUE v on v.NODE_ID = tax.ObjectID
+	inner join TAX_NODE n on n.ID = v.node_id and n.TAXONOMY_ID = 15
+	where pr1.CONTENTID = c.CONTENTID and pr1.REVISIONID = c.public_revision
+	FOR XML path (''), TYPE, ELEMENTS
+	),
+	BODY,
+	author 
+	
+,(select RID  as field_recommended_content
+	from  #blogfeature f inner join (select promocard_id from  #promocard union all select externalpromocard_id from  #externalpromocard) a on f.RID = a.promocard_id
+	where CONTENTID = p.id and f.CONTENTID in (select CONTENTID from  #blogfeature bf inner join (select promocard_id from  #promocard union all select externalpromocard_id from  #externalpromocard) a on bf.RID = a.promocard_id group by CONTENTID having COUNT(*) = 1)
+	order by SORT_RANK FOR XML path (''), TYPE, ELEMENTS 
+	)			
+,(select RID  as field_recommended_contents
+	from  #blogfeature f inner join (select promocard_id from  #promocard union all select externalpromocard_id from  #externalpromocard) a on f.RID = a.promocard_id
+	where CONTENTID = p.id and f.CONTENTID in  (select CONTENTID from  #blogfeature bf inner join (select promocard_id from  #promocard union all select externalpromocard_id from  #externalpromocard) a on bf.RID = a.promocard_id group by CONTENTID having COUNT(*) > 1)
+	order by SORT_RANK FOR XML path (''), TYPE, ELEMENTS 
+	)			
+from   #enpage p 
+inner join CONTENTSTATUS c on p.id = c.CONTENTID 
+left outer join CGVHTMLCONTENTDATA_CGVHTMLCONTENTDATA h on h.contentid = c.contentid and h.REVISIONID = c.public_revision
+inner join CT_CGVBLOGPOST pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.public_revision
+where p.CONTENTTYPENAME = 'cgvblogpost' 
+) a
+on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
+order by d.tag
+for xml explicit
+
+
+
+
+--------------------------
+
+
+
+
+
+
+
+
 ---------------------------
 
+--select * from #cgov_image where imageid = 1149570
 
 
 
 
 
-
-select c.CONTENTID, c.TITLE , dbo.gaogetitemFolderPath(c.contentid, '')  as url 
-, c1.TITLE as listitle 
-from CONTENTSTATUS c inner join PSX_OBJECTRELATIONSHIP r on c.CONTENTID = r.OWNER_ID and c.PUBLIC_REVISION = r.OWNER_REVISION
-inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
-inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
-inner join CT_NCILIST l on l.CONTENTID = c1.CONTENTID and l.REVISIONID = c1.PUBLIC_REVISION
-where c.CONTENTID in (select CONTENTID from #mini )
-and sl.SLOTNAME like 'sys%'
+--select c.CONTENTID, c.TITLE , dbo.gaogetitemFolderPath(c.contentid, '')  as url 
+--, c1.TITLE as listitle 
+--from CONTENTSTATUS c inner join PSX_OBJECTRELATIONSHIP r on c.CONTENTID = r.OWNER_ID and c.PUBLIC_REVISION = r.OWNER_REVISION
+--inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
+--inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
+--inner join CT_NCILIST l on l.CONTENTID = c1.CONTENTID and l.REVISIONID = c1.PUBLIC_REVISION
+--where c.CONTENTID in (select CONTENTID from #mini )
+--and sl.SLOTNAME like 'sys%'
