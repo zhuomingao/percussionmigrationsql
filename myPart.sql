@@ -7,9 +7,9 @@ IF OBJECT_ID('tempdb..#folder') IS NOT NULL  drop table   #folder
 
 declare @siteid int
 
-select @siteid = 1051300 --nano
+--select @siteid = 1051300 --nano
 --select @siteid = 1120556  --nciconnect
---select @siteid = 1133171  --myPart
+select @siteid = 1133171  --myPart
 ;with folders as (
 					  select null as ParentID, f.ContentID as ID, cs.title as FolderName, 
 					convert(varchar(512),'') as Path, 1 as level 
@@ -566,6 +566,7 @@ lc.row_rid as parentid
 , lc.card_rank as listitem_rank
 , null as field_list_title
 , lc.SLOTNAME
+, null as listtemplate
 from  #landing_content lc 
 where lc.SLOTNAME = 'nvcgSlLayoutThumbnailA'
 union all
@@ -578,6 +579,7 @@ c.CONTENTID
 , r.sort_rank
 , null 
 , sl.SLOTNAME
+, null 
 from CONTENTSTATUS c 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
@@ -593,8 +595,9 @@ r.RID
 , c2.contentid 
 , t2.CONTENTTYPENAME 
 , r1.sort_rank 
-, case when pt.name = 'cgvDsListNoTitleDescriptionNoImage' then null else l.UNIQUE_TITLE END as UNIQUE_TITLE
+, case when pt.name like 'cgvDsListNoTitle%' then null else l.UNIQUE_TITLE END as UNIQUE_TITLE
 , sl.SLOTNAME
+, pt.NAME as listtemplate
 from CONTENTSTATUS c 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID 
@@ -608,10 +611,11 @@ inner join CONTENTTYPES t2 on t2.CONTENTTYPEID = c2.CONTENTTYPEID
 inner join PSX_TEMPLATE pt on pt.TEMPLATE_ID = r.VARIANT_ID
 where c.CONTENTID in (select CONTENTID from  #mini)
 and (sl.SLOTNAME = 'cgvBody' )
---and c.CONTENTID = 1133525
+--and c.CONTENTID = 1124079
 ) a 
 
---7371381
+
+
 
 
 
@@ -1728,7 +1732,8 @@ select ll.parentid, ll.listitem_rid as field_list_items, ll.langcode, ll.listite
 where ll.parentid in (select CONTENTID from  #mini)  and SLOTNAME = 'nvcgSlLayoutThumbnailA' 
 union all
 select ll.parentid, ll.listitem_rid as field_list_items, ll.langcode, ll.listitem_rank
-, 'list_item_title_desc' as field_list_item_style
+, case when ll.listtemplate  like '%noImage' then 'list_item_title_desc'
+else 'list_item_title_desc_image' END as field_list_item_style
 , ll.listitem_rank , ll.field_list_title
  from  #landinglistitem ll inner join PSX_OBJECTRELATIONSHIP r on ll.parentid = r.RID 
 where r.OWNER_ID in (select contentid from #mini) and SLOTNAME = 'cgvBody'
@@ -1738,6 +1743,10 @@ where field_list_items  in (select internallink_id from  #internallink)
 or field_list_items  in (select externallink_id from  #externallink)
 GO
 GO
+
+
+
+
 
 
 ---!! list

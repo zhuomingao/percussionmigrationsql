@@ -24,6 +24,23 @@ where  cs.TITLE ='dceg'
 
 
 
+alter table qtp.dbo.endceg add sort_rank int 
+
+
+update e set e.sort_rank = r.SORT_RANK
+from qtp.dbo.endceg e left outer join 
+(CONTENTSTATUS c  left outer join (PSX_OBJECTRELATIONSHIP r  inner join CONTENTSTATUS c1 on c1.CONTENTID = r.OWNER_ID and c1.PUBLIC_REVISION = r.OWNER_REVISION
+inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID and sl.SLOTNAME = 'rffNavSubmenu') on c.CONTENTID = r.DEPENDENT_ID 
+)  on e.term_id = c.CONTENTID 
+
+			
+
+select * from qtp.dbo.endceg
+
+
+select * from qtp.dbo.dcegpage
+
+
 select * from qtp.dbo.endceg where computed_path = '/'
 
 
@@ -38,7 +55,6 @@ select * from qtp.dbo.dcegpage where contentid = 302687
 ------------------
 ------------------
 ------------------
-
 
 
 

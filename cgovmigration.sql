@@ -587,6 +587,13 @@ from  #es inner join  #espage on  #es.field_landing_page =  #espage.id
 where  #espage.englishid is not null
 
 
+
+
+update  #es set  #es.field_landing_page =  ses.id
+from  #es inner join  #summaryes ses on #es.field_landing_page =  ses.spanishid
+
+
+
 --!! sitesection
 IF OBJECT_ID('tempdb..#s') IS NOT NULL  drop table   #s
 select * into  #s from
@@ -628,6 +635,10 @@ from (select * from  #en union all select * from  #es) a
 order by 1
 for xml path, root('rows')
 
+
+
+select * from #es where field_landing_page in (select spanishid from #summaryes)
+select * from #summaryes
 
 
 
@@ -986,7 +997,7 @@ select distinct
 1 as tag
 , 0 as parent
  , h.CONTENTID  as [row!1!id]
-, langcode  as [row!1!langcode]
+, 'en'  as [row!1!langcode]
 , convert(nvarchar(max),BODYFIELD) as [row!1!body!CDATA]
 , left(c1.TITLE, CHARINDEX('[', c1.TITLE)-1) as [row!1!info!Element]
 from  #cthp cp  
@@ -1001,7 +1012,7 @@ select distinct
 1 as tag
 , 0 as parent
 , c1.CONTENTID as [row!1!id]
-, langcode as [row!1!langcode]
+, 'en' as [row!1!langcode]
 , convert(nvarchar(max),BODYFIELD) as [row!1!body!CDATA]
 , left(c1.TITLE, CHARINDEX('[', c1.TITLE)-1) as [row!1!info!Element]
 from CONTENTSTATUS c inner join 
@@ -1015,8 +1026,6 @@ from CONTENTSTATUS c inner join
 where sl.SLOTNAME = 'sys_inline_variant' 
 ) a 
 for xml explicit , root ('rows')
-
-
 
 
 
@@ -1727,7 +1736,7 @@ field_pretty_url
 , SYNDICATE
 , META_KEYWORDS
 ,(
-		select internallink_id as related_resource_id
+		select distinct internallink_id as related_resource_id
 		from  CONTENTSTATUS c
 		inner join PSX_OBJECTRELATIONSHIP r on c.contentid = r.OWNER_ID and c.public_revision = r.OWNER_REVISION
 		inner join (select internallink_id from  #internallink union all select externallink_id from  #externallink) il on il.internallink_id = r.RID
@@ -1743,7 +1752,7 @@ field_pretty_url
 			FOR XML path (''), TYPE, ELEMENTS
 			)
 ,(
-		select internallink_id as related_resource_ids, r.SORT_RANK
+		select distinct internallink_id as related_resource_ids, r.SORT_RANK
 		from  CONTENTSTATUS c
 		inner join PSX_OBJECTRELATIONSHIP r on c.contentid = r.OWNER_ID and c.public_revision = r.OWNER_REVISION
 		inner join (select internallink_id from  #internallink union all select externallink_id from  #externallink) il on il.internallink_id = r.RID
@@ -1924,6 +1933,7 @@ select distinct c.CONTENTID as pageid, c1.CONTENTID as imageid
 , convert(nvarchar(max),si.IMG_ALT) as field_accessible_version
 , convert(nvarchar(max),i.img_CAPTION) as field_caption
 , i.IMG_SOURCE as field_original_source
+, null as spanishimageid 
 from CONTENTSTATUS c 
 inner join (select id, langcode from  #enpage union all select ID, langcode  from  #espage  union all select dependent_id, langcode  from  #externallink union all select dependent_id, langcode  from  #externalpromocard
 --cthp external card image
@@ -1945,6 +1955,7 @@ select distinct c.CONTENTID as pageid, c2.CONTENTID as imageid
 , convert(nvarchar(max),si.IMG_ALT) as ALT
 , convert(nvarchar(max),trans.IMG_CAPTION)
 , convert(nvarchar(max),trans.IMG_SOURCE)
+, c1.CONTENTID as spanishimageid
 from CONTENTSTATUS c 
 inner join (select id , langcode  from  #enpage union all select ID, langcode  from  #espage union all select dependent_id, langcode  from  #externallink union all select dependent_id, langcode  from  #externalpromocard) p on c.CONTENTID = p.id 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
@@ -1968,7 +1979,7 @@ select l.internallink_id, field_override_image_promotional
 , convert(nvarchar(max),si.IMG_ALT) as field_accessible_version
 , convert(nvarchar(max),i.img_CAPTION) as field_caption
 , i.IMG_SOURCE as field_original_source
-
+, null
 from #internallink1 l inner join CONTENTSTATUS c on c.CONTENTID = l.field_override_image_promotional
  left outer join CT_GENIMAGE i on i.CONTENTID = c.CONTENTID and i.REVISIONID = c.public_revision
 left outer join RXS_CT_SHAREDIMAGE si on si.CONTENTID = c.CONTENTID and si.REVISIONID = c.public_revision
@@ -1988,6 +1999,7 @@ select distinct c.CONTENTID as pageid, c1.CONTENTID as imageid
 , convert(nvarchar(max),si.IMG_ALT) as field_accessible_version
 , convert(nvarchar(max),i.img_CAPTION) as field_caption
 , i.IMG_SOURCE as field_original_source
+, null as spanishimageid 
 from CONTENTSTATUS c 
 inner join (select id, langcode from  #enpage union all select ID, langcode from  #espage ) p on c.CONTENTID = p.id 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
@@ -2007,6 +2019,7 @@ select distinct c.CONTENTID as pageid, c2.CONTENTID as imageid
 , convert(nvarchar(max),si.IMG_ALT) as ALT
 , convert(nvarchar(max),trans.IMG_CAPTION)
 , convert(nvarchar(max),trans.IMG_SOURCE)
+, c1.CONTENTID as spanishimageid 
 from CONTENTSTATUS c 
 inner join (select id, langcode from  #enpage union all select ID, langcode from  #espage ) p on c.CONTENTID = p.id 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
@@ -2029,6 +2042,7 @@ select distinct c.CONTENTID as pageid, c1.CONTENTID as imageid
 , null
 , NUll as field_caption
 , null 
+,null 
  from CONTENTSTATUS c 
 inner join (select id, langcode from  #enpage union all select ID, langcode from  #espage ) p on c.CONTENTID = p.id 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.public_revision
@@ -3178,12 +3192,11 @@ select
 , 1 as parent
 , p.id
 , h.BODY as body 
-
 , m.ENABLE_PUSH_STATE as field_enable_push_state
 ,(select top 1 imageid from  #cgov_image i where i.pageid = p.id and imagefield = 'promotion' and langcode = p.langcode) as field_image_promotional
-from #enpage p 
+from (select id, langcode, CONTENTTYPENAME from  #enpage ) p 
 inner join CONTENTSTATUS c on c.CONTENTID = p.id 
-inner join CGVDYNAMICPAGEDATA_CGVDYNAMICPAGEDATA m on m.CONTENTID = c.CONTENTID and m.REVISIONID = c.PUBLIC_REVISION
+left outer join CGVDYNAMICPAGEDATA_CGVDYNAMICPAGEDATA m on m.CONTENTID = c.CONTENTID and m.REVISIONID = c.PUBLIC_REVISION
 inner join CGVHTMLCONTENTDATA_CGVHTMLCONTENTDATA h on h.CONTENTID = c.CONTENTID and h.REVISIONID = c.PUBLIC_REVISION
 where CONTENTTYPENAME = 'nciappmodulepage'
 ) a on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
@@ -3193,6 +3206,34 @@ GO
 
 
 
+select 'appmodulepage_es'
+select d.*,  a.[row!2!body!CDATA],  a.[row!2!field_enable_push_state!Element]
+, [row!2!field_image_promotional!Element] 
+from  #espagedata d 
+inner join 
+(select
+1 as tag,
+0 as parent,
+NULL as id ,
+NULL as [row!2!body!CDATA],
+NULL as  [row!2!field_enable_push_state!Element] ,
+NULL as  [row!2!field_image_promotional!Element] 
+union all 
+select 
+2 as tag
+, 1 as parent
+, p.englishid
+, h.BODY as body 
+, m.ENABLE_PUSH_STATE as field_enable_push_state
+,(select top 1 imageid from  #cgov_image i where i.pageid = p.id and imagefield = 'promotion' and langcode = p.langcode) as field_image_promotional
+from #espage p 
+inner join CONTENTSTATUS c on c.CONTENTID = p.id 
+left outer join CGVDYNAMICPAGEDATA_CGVDYNAMICPAGEDATA m on m.CONTENTID = c.CONTENTID and m.REVISIONID = c.PUBLIC_REVISION
+inner join CGVHTMLCONTENTDATA_CGVHTMLCONTENTDATA h on h.CONTENTID = c.CONTENTID and h.REVISIONID = c.PUBLIC_REVISION
+where CONTENTTYPENAME = 'nciappmodulepage' and englishid is not null
+) a on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
+order by d.tag
+for xml explicit
 
 
 ------------------------
@@ -3653,6 +3694,7 @@ Null as [row!2!address_line2!Element],
 Null as [row!2!city!Element],
 Null as [row!2!state!Element],
 Null as [row!2!zipcode!Element],
+NULL as [row!2!date_display_mode!Element],
 NULL as [row!2!related_resource_id!Element]
 ,NULL as [row!2!related_resource_ids!Element]
 ,NULL as [row!2!field_parent_institution!Element]
@@ -3694,6 +3736,10 @@ cc.BODYFIELD
 , a.CITY 
 ,  s.STATEID
 , a.ZIPCODE
+, (select distinct #d.date_display_mode from GLODATEDISPLAYMODE_GLODATEDISPLAYMODE d inner join #d on d.DATE_DISPLAY_MODE = #d.id  
+where d.CONTENTID = c.contentid and d.REVISIONID = c.PUBLIC_REVISION
+for XML path('') , type, elements) as date_display_mode
+
 ,(
 		select internallink_id as related_resource_id
 		from  CONTENTSTATUS c
@@ -3830,6 +3876,7 @@ inner join (select rawcard_rid from   #rawhtml union all select rid from  #dynam
 where SLOTNAME like '%general%' or CONTENTTYPENAME = 'cgvDynamicList'
 
 
+
 -- tow column row
 select 'twocolumnrow'
 select tc.row_rid, langcode
@@ -3908,6 +3955,9 @@ select lc.row_rid, lc.card_rid as field_row_cards , lc.langcode , lc.sublayoutti
 from  #landing_content lc inner join  #externalpromocard pc on lc.card_rid = pc.externalpromocard_id
 where SLOTNAME = 'nvcgSlLayoutFeatureB' and lc.row_rid not in (select row_rid from  #landing_contentMM)
 ) a
+
+
+
 
 
 IF OBJECT_ID('tempdb..#list') IS NOT NULL  drop table   #list 
@@ -4312,10 +4362,67 @@ where p.id in (select id from  #landing_content )
 for xml path , root ('rows')
 
 
+
+
+
+
+
+
+
 ---------------------------
 
 ---------------------------
 -------------------------------
+
+
+--external link Embed
+select distinct
+c1.CONTENTID,   convert(varchar(900),h.URL) as url
+from CONTENTSTATUS c inner join 
+ (select id, contenttypename, langcode from #enpage union all select ID, contenttypename, langcode from #espage)  a
+ on c.CONTENTID = a.id 
+ inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.PUBLIC_REVISION
+ inner join RXSLOTTYPE sl on sl.SLOTID = r.SLOT_ID
+ inner join PSX_TEMPLATE t on t.TEMPLATE_ID = r.VARIANT_ID 
+ inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
+ inner join CT_NCIlink  h on h.CONTENTID = c1.CONTENTID and h.REVISIONID = c1.PUBLIC_REVISION
+where sl.SLOTNAME like 'sys%' 
+
+
+---report raw_html
+
+
+--select dbo.gaogetitemFolderPath(id, '') as url, id as parentcontentid, parenttype, TITLE  from 
+--(
+--select id,  'homelandingdirect' as parenttype, c.TITLE 
+--from #l l inner join #rawhtml h on l.field_landing_content = h.rawcard_rid
+--inner join PSX_OBJECTRELATIONSHIP r on r.RID = h.rawcard_rid
+--inner join CONTENTSTATUS c on c.CONTENTID = r.DEPENDENT_ID
+--where rowtype = '3rawhtml'
+--union 
+--select ml.parentid, 'minilanding', c.TITLE   from #minilandingcontent ml inner join  #minirawhtml h on ml.id = h.id 
+--inner join PSX_OBJECTRELATIONSHIP r on r.RID = h.id
+--inner join CONTENTSTATUS c on c.CONTENTID = r.DEPENDENT_ID
+--union 
+--select id, 'homelandingrow', c.TITLE  
+--from #l l 
+--inner join #twocolumn1  t on t.row_rid = l.field_landing_content
+--inner join #rawhtml h on (t.field_main_contents = h.rawcard_rid or t.field_secondary_contents = h.rawcard_rid)
+--inner join PSX_OBJECTRELATIONSHIP r on r.RID = h.rawcard_rid
+--inner join CONTENTSTATUS c on c.CONTENTID = r.DEPENDENT_ID
+--union 
+--select id, 'homelandingrow', c.TITLE  
+--from #l l 
+--inner join #pfcrow  t on t.row_rid = l.field_landing_content
+--inner join #rawhtml h on t.field_row_cards = h.rawcard_rid
+--inner join PSX_OBJECTRELATIONSHIP r on r.RID = h.rawcard_rid
+--inner join CONTENTSTATUS c on c.CONTENTID = r.DEPENDENT_ID
+--) a 
+--order by 1
+
+
+
+
 
 --!!!!translationid report!!!!
 
@@ -4330,6 +4437,26 @@ from #summary
 union all 
 select spanishid, id , 'pdqinformationsummary', dbo.gaogetitemFolderPath(spanishid, '') as url 
 from #summaryes
+union all 
+select distinct spanishimageid, englishimageid, 'image' as type , null 
+from #cgov_image where englishimageid is not null and spanishimageid is not null 
+union all 
+select distinct spanishimageid, englishimageid, 'image', null 
+from #contextual_image where englishimageid is not null and spanishimageid is not null 
+
 ) a
-where id = 1099975
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -11,10 +11,6 @@ select * into  #d from
  select 4, 'reviewed'
  )a
 
-
-
---- !!!!!! needs sitesection weight
-
 --!! sitesection
 IF OBJECT_ID('tempdb..#s') IS NOT NULL drop table #s
 select * into #s from
@@ -31,7 +27,7 @@ select
 computed_path
 , c.CONTENTID 
 --level,
---sort_rank AS weight,
+,s.sort_rank AS weight
 ,name,
 term_id,
 parent,
@@ -58,6 +54,23 @@ outer apply (select  h.CONTENTID from PSX_OBJECTRELATIONSHIP r1
 			and st.SLOTNAME = 'nvcgSlMegamenuHtml' ) m
 order by 1
 for xml path , root('rows')
+
+
+
+
+
+
+select 'rawhmlblock'
+select 
+1 as tag
+, 0 as parent
+,mega.field_mega_menu_content as [row!1!id], langcode as [row!1!langcode], df.BODYFIELD as [row!1!body!CDATA], 'Megamenu: '+ mega.computed_path as [row!1!info!Element]
+from CONTENTSTATUS c inner join 
+(select  field_mega_menu_content, langcode, computed_path from qtp.dbo.endceg where field_mega_menu_content is not null
+) mega on mega.field_mega_menu_content = c.CONTENTID 
+inner join CT_GLORAWHTML df on df.CONTENTID = c.contentid and df.REVISIONID = c.public_revision
+for xml explicit , root('rows')
+
 -------------
 
 
@@ -100,26 +113,26 @@ and CONTENTTYPENAME not like 'rffNav%'
 
 ------------------
 IF OBJECT_ID('tempdb..#list') IS NOT NULL drop table #list 
-select c.CONTENTID as pageid 
+select 
+c.CONTENTID as pageid 
 ,   r.RID as list_rid
 , r.SORT_RANK as list_rank 
 ,    c1.CONTENTID as list_id 
 ,  r1.RID as link_rid , c2.CONTENTID as linkid, t2.CONTENTTYPENAME , r1.SORT_RANK
+, case when pt.name like '%NoTitle%' then null else left(c1.TITLE, charindex('[', c1.title) -1)  END as field_list_title
 into #list
 from #enpage p inner join CONTENTSTATUS c on c.CONTENTID = p.id 
 inner join PSX_OBJECTRELATIONSHIP r on r.OWNER_ID = c.CONTENTID and r.OWNER_REVISION = c.CURRENTREVISION
 inner join RXSLOTTYPE  sl on sl.SLOTID = r.SLOT_ID 
 inner join CONTENTSTATUS c1 on c1.CONTENTID = r.DEPENDENT_ID
+
 inner join CONTENTTYPES t1 on t1.CONTENTTYPEID = c1.CONTENTTYPEID 
 inner join PSX_OBJECTRELATIONSHIP r1 on r1.OWNER_ID = c1.CONTENTID and r1.OWNER_REVISION = c1.CURRENTREVISION
 inner join RXSLOTTYPE  sl1 on sl1.SLOTID = r1.SLOT_ID 
 inner join CONTENTSTATUS c2 on c2.CONTENTID = r1.DEPENDENT_ID
 inner join CONTENTTYPES t2 on t2.CONTENTTYPEID = c2.CONTENTTYPEID 
+inner join PSX_TEMPLATE pt on pt.template_id = r.VARIANT_ID
 where sl.SLOTNAME ='genSlotBody' and t1.CONTENTTYPENAME = 'genlist'
-
-
-
-
 
 
 IF OBJECT_ID('tempdb..#internallink1') IS NOT NULL drop table #internallink1
@@ -220,6 +233,7 @@ GO
 --list
 select 'list'
 select  list_rid as row_rid,  'list_item_title_desc' as field_list_item_style, 'en' as langcode
+, field_list_title
 , (select link_rid as field_list_item 
 	from #list l1 
 	where l1.list_rid = l.list_rid and l1.list_rid in (select list_rid from #list group by list_rid having COUNT(*) =1 )
@@ -231,13 +245,8 @@ select  list_rid as row_rid,  'list_item_title_desc' as field_list_item_style, '
 	order by l1.SORT_RANK
 	for XML path (''), TYPE, ELEMENTS
 	)
-from (select distinct list_rid from #list ) l 
+from (select distinct list_rid, field_list_title from #list ) l 
 for xml path, root ('rows')
-
-
-
-
-
 
 --contentblock
 IF OBJECT_ID('tempdb..#contentblock') IS NOT NULL   drop table #contentblock 
@@ -618,6 +627,14 @@ order by d.tag
 for xml explicit
 
 
+
+
+select  pr.ADDRESS1, COUNT(*)
+from #enpage p 
+inner join CONTENTSTATUS c on p.id = c.CONTENTID 
+inner join CT_GENBIOGRAPHY pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION
+where ADDRESS1 is not null
+group by pr.ADDRESS1
 --event
 
 ---!!!!!! TODO  venue   tax   bio's campus taxs
@@ -651,7 +668,7 @@ select
 ,pr.[BODYFIELD] 
 , pr.END_DATE
 ,pr.START_DATE
-, 400 as venue
+, case when venue like '%shady%' then 400 when CITY like '%bethesda%' then 401   END as venue
 , pr.CITY
 , pr.ALL_DAY
 , 350 as field_event_series
@@ -720,27 +737,27 @@ select
 , (select pr.bodyfield  from CT_GENgeneral pr where pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION) 
 ) as  BODY
 , 500
-, (select 501 As id
-from CONTENTSTATUS where CONTENTID = 305
+,
+(select case id when 'linkage Newsletter' then 502 when 'research highlights' then 501 when 'people in the news' then 503 when 'Fellowships &amp; Training' then 504 end as id  from 
+(select qdp.[Blog Tag (cgv_blog_post only)] as id
+from qtp.dbo.dcegpage qdp 
+where qdp.contentid = p.ID and qdp.[Blog Tag (cgv_blog_post only)] is not null 
+union 
+select qdp.[Blog Tag 2]
+from qtp.dbo.dcegpage qdp 
+where qdp.contentid = p.ID and qdp.[Blog Tag 2] is not null 
+) a
 FOR XML path (''), TYPE, ELEMENTS) 
 from  #enpage p 
 inner join CONTENTSTATUS c on p.id = c.CONTENTID 
 left outer join CT_GENNEWSLETTERARTICLE pr on pr.CONTENTID = c.CONTENTID and pr.REVISIONID = c.CURRENTREVISION
 left outer join CT_GENNEWSLETTER l on l.CONTENTID = c.CONTENTID and l.REVISIONID = c.CURRENTREVISION
-where p.id  in (select contentid from qtp.dbo.dcegpage p where p.[Drupal CONTENTTYPENAME]= 'cgov_blog_post' )
+inner join qtp.dbo.dcegpage dp on dp.contentid = p.id 
+where dp.[Drupal CONTENTTYPENAME]= 'cgov_blog_post'
 ) a
 on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
 order by d.tag
 for xml explicit
-
-
-
-
-
-
-
-
-
 
 
 --cgov file 
@@ -758,7 +775,7 @@ where Tag =1 or
 [row!2!id] 
 in  (
 select contentID from qtp.dbo.dcegpage p 
-where p.[Drupal CONTENTTYPENAME] = 'cgov_file'
+where p.[Drupal CONTENTTYPENAME] like '%file'
 )
 order by tag
 for xml explicit
@@ -798,6 +815,44 @@ for xml explicit
 
 
 
+
+
+--video
+select 'video_en'
+select d.*
+,  a.[row!2!field_caption!CDATA], 
+  [row!2!field_media_oembed_video!Element]
+  , [row!2!body!CDATA]
+from #enpagedata d 
+inner join 
+(select
+1 as tag,
+0 as parent,
+NULL as id ,
+NULL as [row!2!field_caption!CDATA],
+NULL as [row!2!field_media_oembed_video!Element],
+null as [row!2!body!CDATA]
+union all 
+select 
+2 as tag
+, 1 as parent
+, p.id
+, gr.CAPTION  as field_caption
+, 'https://www.youtube.com/watch?v=' + gr.VIDEO_ID as field_media_oembed_video
+, gr.BODYFIELD
+from #enpage p inner join CONTENTSTATUS c on c.CONTENTID = p.id 
+inner join CT_CGVVIDEOPLAYER gr on gr.CONTENTID = c.CONTENTID and gr.REVISIONID = c.public_revision
+where p.id in (select CONTENTID from qtp.dbo.dcegpage dp where dp.[Drupal CONTENTTYPENAME] = 'cgov_video')
+)a
+on (a.tag = d.Tag and a.parent = d.Parent and a.tag =1) or (a.tag = 2 and a.id = d.[row!2!id])
+order by d.tag, [row!2!id]
+for xml explicit
+
+
+
+
+select dp.[Drupal CONTENTTYPENAME], COUNT(*) from qtp.dbo.dcegpage dp
+group by dp.[Drupal CONTENTTYPENAME]
 
 
 
